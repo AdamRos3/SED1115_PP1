@@ -13,14 +13,23 @@ while True:
     current_state = test_button.value()
         
     if (prev_state == 0 and current_state == 1):
-        uart.write('27\n')
+        uart.write('1.2\n')
 
         time.sleep(0.3) # Debounce delay
     
     if uart.any():
         data = uart.read()
         if data:
-            print(data.decode('uft-8').strip())
+            data = data.decode('uft-8').strip()
+            average_pwm = (float(adc.read_u16()) / 65535) * 3.3
+            diff = abs(float(data) - average_pwm)
+
+            print("Desired: " + data)
+            print("Actual: " + str(average_pwm))
+            print("Difference: " + str(diff))
+            print()
+
+
 
     prev_state = current_state
 
