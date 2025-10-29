@@ -62,14 +62,16 @@ def strip_tags(data: str, tag: str) -> float:
         return -1
     
     try:
-        return float(data[1:0])
-    except ValueError:
+        return float(data[1:])
+    except ValueError as e:
         print("Invalid " + message_insert + " value received, terminating program...")
+        print(data)
+        print(e)
     except Exception as e:
         print("Something has gone very wrong with receiving a " + message_insert + " value, terminating program...")
         print(e)
-    finally:
-        return -1
+    
+    return -1
 
 while True:
     transmition = TRANSMIT_TAG + str(my_desired_value)
