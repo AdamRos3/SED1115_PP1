@@ -1,5 +1,5 @@
 # ads1x15.py must be loaded onto the pico
-from machine import Pin, UART, I2C, PWM
+from machine import Pin, UART, I2C, PWM, ADC
 from ads1x15 import ADS1015
 from collections import deque 
 import time
@@ -24,13 +24,14 @@ RECEIVE_TAG = "R"
 transmitionQueue = deque((),10)
 
 # Timekeepers for timeout (ms)
-last_sent = 0
+last_sent = None
 current_time = 0
-TIMEOUT_THRESHOLD = 100
+TIMEOUT_THRESHOLD = 1000
 
 i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
 adc = ADS1015(i2c, ADS1015_ADDR, 1)
 pwm = PWM(Pin(PWM_GENERATOR), freq=10000) 
+potentiometer = ADC(Pin(27))
 
 duty_cycle = 32768
 my_desired_value = (duty_cycle / 65535) * 3.3
@@ -134,10 +135,14 @@ def handle_receiving_actual(data):
 while True:
     try:
         # time() returns seconds since the Epoch so multiply by 1000 to convert to ms
+
+        duty_cycle = potentiometer.read_u16()
+
         current_time = (time.time() * 1000)
-        if current_time - last_sent > TIMEOUT_THRESHOLD:
-            print("Connection timeout...")
-            break
+        if last_sent:
+            if current_time - last_sent > TIMEOUT_THRESHOLD:
+                print("Connection timeout...")
+                break
 
         transmition = TRANSMIT_TAG + str(my_desired_value)
         #Mark the start of transmission with a T- to let other pico know this is a desired value
