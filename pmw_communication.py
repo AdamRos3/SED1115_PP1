@@ -1,5 +1,5 @@
 # ads1x15.py must be loaded onto the pico
-from machine import Pin, UART, I2C, PWM
+from machine import Pin, UART, I2C, PWM, ADC
 from ads1x15 import ADS1015
 from collections import deque 
 import time
@@ -31,6 +31,7 @@ TIMEOUT_THRESHOLD = 1000
 i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
 adc = ADS1015(i2c, ADS1015_ADDR, 1)
 pwm = PWM(Pin(PWM_GENERATOR), freq=10000) 
+potentiometer = ADC(Pin(27))
 
 duty_cycle = 32768
 my_desired_value = (duty_cycle / 65535) * 3.3
