@@ -23,6 +23,10 @@ RECEIVE_TAG = "R"
 # Queue for transmition data
 transmitionQueue = deque((),10)
 
+# Timekeepers for timeout (ms)
+last_sent = 0
+current_time = 0
+TIMEOUT_THRESHOLD = 100
 
 i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
 adc = ADS1015(i2c, ADS1015_ADDR, 1)
@@ -129,8 +133,15 @@ def handle_receiving_actual(data):
 
 while True:
     try:
+        # time() returns seconds since the Epoch so multiply by 1000 to convert to ms
+        current_time = (time.time() * 1000)
+        if current_time - last_sent > TIMEOUT_THRESHOLD:
+            print("Connection timeout...")
+            break
+
         transmition = TRANSMIT_TAG + str(my_desired_value)
         #Mark the start of transmission with a T- to let other pico know this is a desired value
+        last_sent = (time.time() * 1000)
         
         uart.write(transmition.encode('utf-8'))
         #Write the desired value to the UART buffer marked with the transmit tag
