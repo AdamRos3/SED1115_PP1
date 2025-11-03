@@ -126,6 +126,8 @@ def handle_receiving_desired(data):
     print_difference_data(other_desired_value, other_actual_value, "Other")
 
 def handle_receiving_actual(data):
+    global last_received
+    
     my_actual_value = strip_tags(data, RECEIVE_TAG)
     last_received = (time.time() * 1000)
 
@@ -141,7 +143,7 @@ while True:
             if (last_received - last_sent) > TIMEOUT_THRESHOLD:
                 print("Connection timeout...")
                 break
-        else:
+        elif not last_received and not last_sent:
             print("Here")
 
         transmition = TRANSMIT_TAG + str(my_desired_value)
