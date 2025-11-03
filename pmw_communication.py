@@ -41,7 +41,7 @@ def print_order(difference: float):
     else:
         order = "Desired = Actual"
 
-    print(order + "\n")
+    print("\n" + order + "\n")
 
 def print_difference_data(desired: float, actual: float, who: str):
     difference = desired - actual
@@ -59,54 +59,65 @@ def strip_tags(data: str, tag: str) -> float:
     elif tag == RECEIVE_TAG:
         message_insert = "actual"
     else:
-        return -1
+        print("Data invalidly tagged")
+        print("Tag: " + tag)
+        raise ValueError
     
     try:
         return float(data[1:])
     except ValueError as e:
         print("Invalid " + message_insert + " value received, terminating program...")
-        print(data)
-        print(e)
+        print("Data: " + data + "\nError:", end=" ")
+        raise
     except Exception as e:
         print("Something has gone very wrong with receiving a " + message_insert + " value, terminating program...")
-        print(e)
-    
-    return -1
+        print("Data: " + data + "\nError:", end=" ")
+        raise
+
+
+def handle_receiving_desired(data):
+    other_desired_value = strip_tags(data, TRANSMIT_TAG)
+
+    other_actual_value = adc.raw_to_v(adc.read(0, ADS1015_PWM))
+    received = RECEIVE_TAG + str(other_actual_value)
+    uart.write(received.encode('utf-8'))
+
+    print_difference_data(other_desired_value, other_actual_value, "Other")
+
+def handle_receiving_actual(data):
+    my_actual_value = strip_tags(data, RECEIVE_TAG)
+
+    print_difference_data(my_desired_value, my_actual_value, "My")
+
 
 while True:
-    transmition = TRANSMIT_TAG + str(my_desired_value)
-    
-    uart.write(transmition.encode('utf-8'))
+    try:
+        transmition = TRANSMIT_TAG + str(my_desired_value)
+        
+        uart.write(transmition.encode('utf-8'))
 
-    if uart.any():
-        data = uart.read()
+        if uart.any():
+            data = uart.read()
 
-        if data:
-            data = data.decode('utf-8').strip()
+            if data:
+                data = data.decode('utf-8').strip()
 
-            if data.startswith(TRANSMIT_TAG):
-                other_desired_value = strip_tags(data, TRANSMIT_TAG)
-                if other_desired_value == -1: break
+                if data.startswith(TRANSMIT_TAG):
+                    handle_receiving_desired(data)
+                elif data.startswith(RECEIVE_TAG):
+                    handle_receiving_actual(data)
+                else:
+                    print("Invalid message received; no valid tag exists, terminating program...")
+                    raise ValueError
 
-                other_actual_value = adc.raw_to_v(adc.read(0, ADS1015_PWM))
-                received = RECEIVE_TAG + str(other_actual_value)
-                uart.write(received.encode('utf-8'))
-
-                print_difference_data(other_desired_value, other_actual_value, "Other")
-
-            elif data.startswith(RECEIVE_TAG):
-                my_actual_value = strip_tags(data, RECEIVE_TAG)
-                if my_actual_value == -1: break
-
-                print_difference_data(my_desired_value, my_actual_value, "My")
-            else:
-                print("Invalid message received; no valid tag exists, terminating program...")
-                break
-
-    time.sleep(0.5)
+        time.sleep(0.5)
+    except Exception as e:
+        print(e)
+        break
 
 print("program terminated")
 
 
 #TODO Timeout when resposes not recieved
 #TODO Possibly implement way to change PWM duty cycle without stoping and changing value in program
+#TODO Impletent restart program
