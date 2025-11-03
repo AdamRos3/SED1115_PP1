@@ -21,7 +21,7 @@ TRANSMIT_TAG = "T"
 RECEIVE_TAG = "R"
 
 # Queue for transmition data
-transmitionQueue = deque()
+transmitionQueue = deque((),10)
 
 
 i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
@@ -79,6 +79,8 @@ def queue_transmissions(data: str):
             activeT_tag = False
             nextMessage = [RECEIVE_TAG]
         elif activeT_tag == True and c != "R":
+            nextMessage.append(c)
+        elif activeR_tag == True and c != "T":
             nextMessage.append(c)
     if activeR_tag == True or activeT_tag == True:
         transmitionQueue.append("".join(nextMessage))
@@ -145,6 +147,7 @@ while True:
             if len(transmitionQueue) > 0:
                 #If there is anything in the queue process it
                 nextMessage = transmitionQueue.popleft()
+                print(nextMessage)
                 if nextMessage.startswith(TRANSMIT_TAG):
                     handle_receiving_desired(nextMessage)
                 elif nextMessage.startswith(RECEIVE_TAG):
