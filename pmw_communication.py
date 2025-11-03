@@ -145,7 +145,6 @@ while True:
                 break
         elif not last_received and not last_sent:
             print("Time keeps not updating")
-            break
 
         transmition = TRANSMIT_TAG + str(my_desired_value)
         #Mark the start of transmission with a T- to let other pico know this is a desired value
