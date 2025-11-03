@@ -176,7 +176,7 @@ while True:
                     #Get whatever data was read and decode it to a string
                     queue_transmissions(data)
                 
-                if len(transmitionQueue) > 0:
+                while len(transmitionQueue) > 0:
                     #If there is anything in the queue process it
                     nextMessage = transmitionQueue.popleft()
                     if nextMessage.startswith(TRANSMIT_TAG):
