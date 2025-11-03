@@ -26,7 +26,7 @@ transmitionQueue = deque((),10)
 # Timekeepers for timeout (ms)
 last_sent = None
 last_received = None
-TIMEOUT_THRESHOLD = 1000
+TIMEOUT_THRESHOLD = 2000
 
 i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
 adc = ADS1015(i2c, ADS1015_ADDR, 1)
@@ -138,7 +138,8 @@ def handle_receiving_actual(data):
 while True:
     try:
         #current_time = (time.time() * 1000)
-
+        duty_cycle = potentiometer.read_u16()
+        my_desired_value = (duty_cycle / 65535) * 3.3
         # time() returns seconds since the Epoch so multiply by 1000 to convert to ms
         if last_sent and last_received:
             if abs(last_received - last_sent) > TIMEOUT_THRESHOLD:
