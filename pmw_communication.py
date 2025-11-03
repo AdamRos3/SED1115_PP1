@@ -140,11 +140,12 @@ while True:
 
         # time() returns seconds since the Epoch so multiply by 1000 to convert to ms
         if last_sent and last_received:
-            if (last_received - last_sent) > TIMEOUT_THRESHOLD:
+            if abs(last_received - last_sent) > TIMEOUT_THRESHOLD:
                 print("Connection timeout...")
                 break
         elif not last_received and not last_sent:
-            print("Here")
+            print("Time keeps not updating")
+            break
 
         transmition = TRANSMIT_TAG + str(my_desired_value)
         #Mark the start of transmission with a T- to let other pico know this is a desired value
