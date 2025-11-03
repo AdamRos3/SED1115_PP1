@@ -23,6 +23,9 @@ RESTART_BUTTON_PIN = 22
 TRANSMIT_TAG = "T"
 RECEIVE_TAG = "R"
 
+# Indicates whether the program should be running
+RUN_FLAG = True
+
 # Queue for transmition data
 transmitionQueue = deque((),10)
 
@@ -145,45 +148,47 @@ def check_timeout():
 
 
 while True:
-    try:
-        check_timeout()
+    if restart_button.value() == 1:
+        last_sent = None    
+        last_received = None
+        RUN_FLAG = True
 
-        #Mark the start of transmission with a T- to let other pico know this is a desired value
-        transmition = TRANSMIT_TAG + str(my_desired_value)
-                
-        #Write the desired value to the UART buffer marked with the transmit tag
-        uart.write(transmition.encode('utf-8'))
-        
-        # time() returns seconds since the Epoch so multiply by 1000 to convert to ms
-        last_sent = (time.time() * 1000)
+    while RUN_FLAG:
+        try:
+            check_timeout()
 
-        if uart.any():
-            #If anything in the buffer read it
-            data = uart.read()
-
-            if data:
-                data = data.decode('utf-8').strip()
-                #Get whatever data was read and decode it to a string
-                queue_transmissions(data)
+            #Mark the start of transmission with a T- to let other pico know this is a desired value
+            transmition = TRANSMIT_TAG + str(my_desired_value)
+                    
+            #Write the desired value to the UART buffer marked with the transmit tag
+            uart.write(transmition.encode('utf-8'))
             
-            if len(transmitionQueue) > 0:
-                #If there is anything in the queue process it
-                nextMessage = transmitionQueue.popleft()
-                if nextMessage.startswith(TRANSMIT_TAG):
-                    handle_receiving_desired(nextMessage)
-                elif nextMessage.startswith(RECEIVE_TAG):
-                    handle_receiving_actual(nextMessage)
-                else:
-                    print("Message in queue invalidly tagged, skipping...")
-                    raise ValueError
+            # time() returns seconds since the Epoch so multiply by 1000 to convert to ms
+            last_sent = (time.time() * 1000)
 
-        time.sleep(0.5)
-    except Exception as e:
-        print(e)
-        break
+            if uart.any():
+                #If anything in the buffer read it
+                data = uart.read()
 
-print("program terminated")
+                if data:
+                    data = data.decode('utf-8').strip()
+                    #Get whatever data was read and decode it to a string
+                    queue_transmissions(data)
+                
+                if len(transmitionQueue) > 0:
+                    #If there is anything in the queue process it
+                    nextMessage = transmitionQueue.popleft()
+                    if nextMessage.startswith(TRANSMIT_TAG):
+                        handle_receiving_desired(nextMessage)
+                    elif nextMessage.startswith(RECEIVE_TAG):
+                        handle_receiving_actual(nextMessage)
+                    else:
+                        print("Message in queue invalidly tagged, skipping...")
+                        raise ValueError
 
-
-#TODO Possibly implement way to change PWM duty cycle without stoping and changing value in program
-#TODO Impletent restart program
+            time.sleep(0.5)
+        except Exception as e:
+            print(e)
+            print("program terminated")
+            RUN_FLAG = False
+            continue
