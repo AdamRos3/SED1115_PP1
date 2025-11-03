@@ -20,9 +20,9 @@ TRANSMIT_TAG = "T"
 RECEIVE_TAG = "R"
 
 # Timekeepers for timeout (ms)
-last_sent = 0
-current_time = 0
-TIMEOUT_THRESHOLD = 100
+last_sent = None
+last_received = None
+TIMEOUT_THRESHOLD = 1000
 
 i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
 adc = ADS1015(i2c, ADS1015_ADDR, 1)
@@ -90,17 +90,22 @@ def handle_receiving_desired(data):
 
 def handle_receiving_actual(data):
     my_actual_value = strip_tags(data, RECEIVE_TAG)
+    last_received = (time.time() * 1000)
 
     print_difference_data(my_desired_value, my_actual_value, "My")
 
 
 while True:
     try:
+        #current_time = (time.time() * 1000)
+
         # time() returns seconds since the Epoch so multiply by 1000 to convert to ms
-        current_time = (time.time() * 1000)
-        if current_time - last_sent > TIMEOUT_THRESHOLD:
-            print("Connection timeout...")
-            break
+        if last_sent and last_received:
+            if (last_received - last_sent) > TIMEOUT_THRESHOLD:
+                print("Connection timeout...")
+                break
+        else:
+            print("Here")
 
         transmition = TRANSMIT_TAG + str(my_desired_value)
         last_sent = (time.time() * 1000)
@@ -129,6 +134,5 @@ while True:
 print("program terminated")
 
 
-#TODO Timeout when resposes not recieved
 #TODO Possibly implement way to change PWM duty cycle without stoping and changing value in program
 #TODO Impletent restart program
