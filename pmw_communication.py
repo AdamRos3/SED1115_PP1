@@ -1,6 +1,7 @@
 # ads1x15.py must be loaded onto the pico
 from machine import Pin, UART, I2C, PWM
 from ads1x15 import ADS1015
+from collections import deque 
 import time
 
 
@@ -19,6 +20,9 @@ ADS1015_PWM = 2     # port 2 has (low-pass filtered) PWM signal
 TRANSMIT_TAG = "T"
 RECEIVE_TAG = "R"
 
+# Queue for transmition data
+transmitionQueue = deque()
+
 
 i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
 adc = ADS1015(i2c, ADS1015_ADDR, 1)
@@ -33,6 +37,7 @@ uart = UART(1, baudrate=9600, tx=Pin(8), rx=Pin(9))
 uart.init(bits=8, parity=None, stop=1) 
 
 def print_order(difference: float):
+    #Prints the order relationship between desired and actual based on the difference value
     order = None
     if difference > 0:
         order = "Desired > Actual"
@@ -44,6 +49,7 @@ def print_order(difference: float):
     print("\n" + order + "\n")
 
 def print_difference_data(desired: float, actual: float, who: str):
+    #Prints the desired, actual, and difference values with who the data belongs to
     difference = desired - actual
 
     print(who + " Desired: " + str(desired) + "V")
@@ -52,7 +58,36 @@ def print_difference_data(desired: float, actual: float, who: str):
 
     print_order(difference)    
 
+def queue_transmissions(data: str):
+    #Queues the data for transmition
+    activeT_tag = False
+    activeR_tag = False
+    nextMessage = []
+    for c in data:
+        if c == "T":
+            if activeR_tag == True or activeT_tag == True:
+                transmitionQueue.append("".join(nextMessage))
+                nextMessage = []
+            activeT_tag = True
+            activeR_tag = False
+            nextMessage = [TRANSMIT_TAG]
+        elif c == "R":
+            if activeR_tag == True or activeT_tag == True:
+                transmitionQueue.append("".join(nextMessage))
+                nextMessage = []
+            activeR_tag = True
+            activeT_tag = False
+            nextMessage = [RECEIVE_TAG]
+        elif activeT_tag == True and c != "R":
+            nextMessage.append(c)
+    if activeR_tag == True or activeT_tag == True:
+        transmitionQueue.append("".join(nextMessage))
+
+
+            
+
 def strip_tags(data: str, tag: str) -> float:
+    #Returns the float value from a tagged message- with error checking, if the message is not formatted correctly
     message_insert = None
     if tag == TRANSMIT_TAG:
         message_insert = "desired"
@@ -93,21 +128,29 @@ def handle_receiving_actual(data):
 while True:
     try:
         transmition = TRANSMIT_TAG + str(my_desired_value)
+        #Mark the start of transmission with a T- to let other pico know this is a desired value
         
         uart.write(transmition.encode('utf-8'))
+        #Write the desired value to the UART buffer marked with the transmit tag
 
         if uart.any():
+            #If anything in the buffer read it
             data = uart.read()
 
             if data:
                 data = data.decode('utf-8').strip()
-
-                if data.startswith(TRANSMIT_TAG):
-                    handle_receiving_desired(data)
-                elif data.startswith(RECEIVE_TAG):
-                    handle_receiving_actual(data)
+                #Get whatever data was read and decode it to a string
+                queue_transmissions(data)
+            
+            if len(transmitionQueue) > 0:
+                #If there is anything in the queue process it
+                nextMessage = transmitionQueue.popleft()
+                if nextMessage.startswith(TRANSMIT_TAG):
+                    handle_receiving_desired(nextMessage)
+                elif nextMessage.startswith(RECEIVE_TAG):
+                    handle_receiving_actual(nextMessage)
                 else:
-                    print("Invalid message received; no valid tag exists, terminating program...")
+                    print("Message in queue invalidly tagged, skipping...")
                     raise ValueError
 
         time.sleep(0.5)
