@@ -146,6 +146,7 @@ def check_timeout():
 
 while True:
     try:
+        check_timeout()
 
         #Mark the start of transmission with a T- to let other pico know this is a desired value
         transmition = TRANSMIT_TAG + str(my_desired_value)
