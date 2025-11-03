@@ -139,15 +139,6 @@ def handle_receiving_actual(data) -> None:
 
     print_difference_data(my_desired_value, my_actual_value, "My")
 
-def check_timeout():
-    if last_sent and last_received:
-        if abs(last_received - last_sent) > TIMEOUT_THRESHOLD:
-            print("Connection timeout...")
-            raise ValueError
-        elif not last_received and not last_sent:
-            print("Time keepers not updating")
-
-
 while True:
     if restart_button.value() == 1:
         last_sent = None    
@@ -156,16 +147,24 @@ while True:
 
     while RUN_FLAG:
         try:
-            check_timeout()
+            if last_sent and last_received:
+                print("DIFF:", str(abs(last_received - last_sent)))
+                if abs(last_received - last_sent) > TIMEOUT_THRESHOLD:
+                    print("Connection timeout...")
+                    raise ValueError
+            elif not last_received and not last_sent:
+                print("Time keepers not updating")
 
+            duty_cycle = potentiometer.read_u16()
+            pwm.duty_u16(duty_cycle)
+            my_desired_value = (duty_cycle / 65535) * 3.3
+            
             #Mark the start of transmission with a T- to let other pico know this is a desired value
             transmition = TRANSMIT_TAG + str(my_desired_value)
                     
             #Write the desired value to the UART buffer marked with the transmit tag
             uart.write(transmition.encode('utf-8'))
-            
-            # time() returns seconds since the Epoch so multiply by 1000 to convert to ms
-            last_sent = (time.time() * 1000)
+            last_sent = time.ticks_ms()
 
             if uart.any():
                 #If anything in the buffer read it
