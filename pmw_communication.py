@@ -165,7 +165,6 @@ while True:
             if len(transmitionQueue) > 0:
                 #If there is anything in the queue process it
                 nextMessage = transmitionQueue.popleft()
-                print(nextMessage)
                 if nextMessage.startswith(TRANSMIT_TAG):
                     handle_receiving_desired(nextMessage)
                 elif nextMessage.startswith(RECEIVE_TAG):
