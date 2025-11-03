@@ -139,6 +139,7 @@ while True:
     try:
         #current_time = (time.time() * 1000)
         duty_cycle = potentiometer.read_u16()
+        pwm.duty_u16(duty_cycle)
         my_desired_value = (duty_cycle / 65535) * 3.3
         # time() returns seconds since the Epoch so multiply by 1000 to convert to ms
         if last_sent and last_received:

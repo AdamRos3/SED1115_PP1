@@ -17,6 +17,7 @@ ADS1015_PWM = 2     # port 2 has (low-pass filtered) PWM signal
 i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
 adc = ADS1015(i2c, ADS1015_ADDR, 1)
 pwm = PWM(Pin(PWM_GENERATOR), freq=10000) 
+potentiometer = ADC(Pin(27))
 
 duty_cycle = 32768
 desired_value = (duty_cycle / 65535) * 3.3
@@ -24,6 +25,9 @@ desired_value = (duty_cycle / 65535) * 3.3
 pwm.duty_u16(duty_cycle) 
 
 while True:
+    duty_cycle = potentiometer.read_u16()
+    pwm.duty_u16(duty_cycle)
+    desired_value = (duty_cycle / 65535) * 3.3
     average_pwm = adc.raw_to_v(adc.read(0, ADS1015_PWM))
 
     diff = abs(desired_value - average_pwm)
