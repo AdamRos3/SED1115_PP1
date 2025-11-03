@@ -32,7 +32,7 @@ transmitionQueue = deque((),10)
 # Timekeepers for timeout (ms)
 last_sent = None
 last_received = None
-TIMEOUT_THRESHOLD = 5000
+TIMEOUT_THRESHOLD = 3000
 
 i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
 adc = ADS1015(i2c, ADS1015_ADDR, 1)
