@@ -19,6 +19,10 @@ ADS1015_PWM = 2     # port 2 has (low-pass filtered) PWM signal
 TRANSMIT_TAG = "T"
 RECEIVE_TAG = "R"
 
+# Timekeepers for timeout (ms)
+last_sent = 0
+current_time = 0
+TIMEOUT_THRESHOLD = 100
 
 i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
 adc = ADS1015(i2c, ADS1015_ADDR, 1)
@@ -92,7 +96,14 @@ def handle_receiving_actual(data):
 
 while True:
     try:
+        # time() returns seconds since the Epoch so multiply by 1000 to convert to ms
+        current_time = (time.time() * 1000)
+        if current_time - last_sent > TIMEOUT_THRESHOLD:
+            print("Connection timeout...")
+            break
+
         transmition = TRANSMIT_TAG + str(my_desired_value)
+        last_sent = (time.time() * 1000)
         
         uart.write(transmition.encode('utf-8'))
 
