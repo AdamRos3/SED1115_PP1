@@ -26,7 +26,7 @@ transmitionQueue = deque((),10)
 # Timekeepers for timeout (ms)
 last_sent = None
 last_received = None
-TIMEOUT_THRESHOLD = 2000
+TIMEOUT_THRESHOLD = 5000
 
 i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
 adc = ADS1015(i2c, ADS1015_ADDR, 1)
@@ -130,7 +130,7 @@ def handle_receiving_actual(data):
     global last_received
     
     my_actual_value = strip_tags(data, RECEIVE_TAG)
-    last_received = (time.time() * 1000)
+    last_received = (time.ticks_ms())
 
     print_difference_data(my_desired_value, my_actual_value, "My")
 
@@ -142,7 +142,10 @@ while True:
         pwm.duty_u16(duty_cycle)
         my_desired_value = (duty_cycle / 65535) * 3.3
         # time() returns seconds since the Epoch so multiply by 1000 to convert to ms
+
+        #print("Last sent: ",last_sent," Last Recieved: ", last_received)
         if last_sent and last_received:
+            #print("Difference: ", abs(last_sent - last_received))
             if abs(last_received - last_sent) > TIMEOUT_THRESHOLD:
                 print("Connection timeout...")
                 break
@@ -151,7 +154,7 @@ while True:
 
         transmition = TRANSMIT_TAG + str(my_desired_value)
         #Mark the start of transmission with a T- to let other pico know this is a desired value
-        last_sent = (time.time() * 1000)
+        last_sent = (time.ticks_ms())
         
         uart.write(transmition.encode('utf-8'))
         #Write the desired value to the UART buffer marked with the transmit tag
@@ -165,7 +168,8 @@ while True:
                 #Get whatever data was read and decode it to a string
                 queue_transmissions(data)
             
-            if len(transmitionQueue) > 0:
+            while len(transmitionQueue) > 0:
+                #print("Queue length: ", len(transmitionQueue))
                 #If there is anything in the queue process it
                 nextMessage = transmitionQueue.popleft()
                 if nextMessage.startswith(TRANSMIT_TAG):
