@@ -99,25 +99,25 @@ def queue_transmissions(data: str) -> None:
 
 def strip_tags(data: str, tag: str) -> float:
     #Returns the float value from a tagged message- with error checking, if the message is not formatted correctly
+    # Use exception propagation to terminate main loop when error occurs in function (throwing the error)
+
     message_insert = None
     if tag == TRANSMIT_TAG:
         message_insert = "desired"
     elif tag == RECEIVE_TAG:
         message_insert = "actual"
     else:
-        print("Data invalidly tagged")
-        print("Tag: " + tag)
-        raise ValueError
+        raise ValueError("Data invalidly tagged\nTag: " + tag)
     
     try:
         return float(data[1:])
     except ValueError as e:
         print("Invalid " + message_insert + " value received, terminating program...")
-        print("Data: " + data + "\nError:", end=" ")
+        print("Data: " + data, end=" ")
         raise
     except Exception as e:
         print("Something has gone very wrong with receiving a " + message_insert + " value, terminating program...")
-        print("Data: " + data + "\nError:", end=" ")
+        print("Data: " + data, end=" ")
         raise
 
 
@@ -154,8 +154,8 @@ while True:
             if last_sent and last_received:
                 # Make sure we're receiving a response within time threshold
                 if abs(last_received - last_sent) > TIMEOUT_THRESHOLD:
-                    print("Connection timeout...")
-                    raise ValueError
+                    # Consistently use exception propagation for cleanliness
+                    raise TimeoutError("Connection timeout")
             elif not last_received and not last_sent:
                 print("Time keepers not updating")
 
@@ -188,12 +188,14 @@ while True:
                     elif nextMessage.startswith(RECEIVE_TAG):
                         handle_receiving_actual(nextMessage)
                     else:
-                        print("Message in queue invalidly tagged, skipping...")
-                        raise ValueError
+                        # Consistently use exception propagation for cleanliness
+                        raise ValueError("Message in queue invalidly tagged")
 
             time.sleep(0.5)
+            
+        # All exception or errors that may occur in program are dealt with and end up here
         except Exception as e:
-            print(e)
+            print("Error: " + str(e))
             print("program terminated")
             RUN_FLAG = False
             continue
