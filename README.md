@@ -1,8 +1,11 @@
-Rafael Robin: 300354890
+Rafael Robin: 300354890:
  
 Methods worked on: 
 
-Main writing desired over uart and reading pwm output loop
+Transimision Queue handling
+queue_transmission()
+Timeout debugging 
+Potentiometer/ADC logic
 
 Adam Rosenblatt 300350608:
 
