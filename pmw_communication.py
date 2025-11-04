@@ -120,7 +120,6 @@ def strip_tags(data: str, tag: str) -> float:
         print("Data: " + data, end=" ")
         raise
 
-
 def handle_receiving_desired(data) -> None:
     other_desired_value = strip_tags(data, TRANSMIT_TAG)
 
@@ -192,7 +191,7 @@ while True:
                         raise ValueError("Message in queue invalidly tagged")
 
             time.sleep(0.5)
-            
+
         # All exception or errors that may occur in program are dealt with and end up here
         except Exception as e:
             print("Error: " + str(e))
