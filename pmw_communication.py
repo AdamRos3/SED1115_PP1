@@ -4,7 +4,6 @@ from ads1x15 import ADS1015
 from collections import deque 
 import time
 
-
 # I2C signal pins
 I2C_SDA = 14
 I2C_SCL = 15
@@ -32,7 +31,7 @@ transmitionQueue = deque((),10)
 # Timekeepers for timeout (ms)
 last_sent = None
 last_received = None
-TIMEOUT_THRESHOLD = 3000
+TIMEOUT_THRESHOLD = 1000
 
 i2c = I2C(1, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL))
 adc = ADS1015(i2c, ADS1015_ADDR, 1)
@@ -125,6 +124,7 @@ def strip_tags(data: str, tag: str) -> float:
 def handle_receiving_desired(data) -> None:
     other_desired_value = strip_tags(data, TRANSMIT_TAG)
 
+    # Use onboard low-pass filter and ADC to read other board's pwm being sent
     other_actual_value = adc.raw_to_v(adc.read(0, ADS1015_PWM))
     received = RECEIVE_TAG + str(other_actual_value)
     uart.write(received.encode('utf-8'))
@@ -135,11 +135,14 @@ def handle_receiving_actual(data) -> None:
     global last_received
     
     my_actual_value = strip_tags(data, RECEIVE_TAG)
+
+    # Recored when last reponse is received from other pico
     last_received = (time.ticks_ms())
 
     print_difference_data(my_desired_value, my_actual_value, "My")
 
 while True:
+    # Resets the program, placing it in it's "idle" state
     if restart_button.value() == 1:
         last_sent = None    
         last_received = None
@@ -147,8 +150,9 @@ while True:
 
     while RUN_FLAG:
         try:
+            # Make sure program has started before timeing out
             if last_sent and last_received:
-                print("DIFF:", str(abs(last_received - last_sent)))
+                # Make sure we're receiving a response within time threshold
                 if abs(last_received - last_sent) > TIMEOUT_THRESHOLD:
                     print("Connection timeout...")
                     raise ValueError
@@ -164,6 +168,7 @@ while True:
                     
             #Write the desired value to the UART buffer marked with the transmit tag
             uart.write(transmition.encode('utf-8'))
+            # Record when last message is sent to other pico
             last_sent = time.ticks_ms()
 
             if uart.any():
