@@ -154,7 +154,7 @@ while True:
                 # Make sure we're receiving a response within time threshold
                 if abs(last_received - last_sent) > TIMEOUT_THRESHOLD:
                     # Consistently use exception propagation for cleanliness
-                    raise TimeoutError("Connection timeout")
+                    raise ValueError("Connection timeout")
             elif not last_received and not last_sent:
                 print("Time keepers not updating")
 
